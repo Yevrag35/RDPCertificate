@@ -5,6 +5,7 @@
     CompanyName = 'DGRSystems, LLC.'
     Copyright = "© 2018 DGRSystems, LLC.  All rights reserved."
     ModuleVersion = '1.0.0'
+	PowerShellVersion = '5.0'
 	NestedModules = @('RDPCertificate.psm1')
 	ScriptsToProcess = @('ImportScript.ps1')
 	FunctionsToExport = @('Set-RDPCertificate')

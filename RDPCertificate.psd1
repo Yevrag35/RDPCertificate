@@ -4,7 +4,7 @@
     Description = 'A module for generating and applying certificates for use with Remote Desktop Services on local and remote machines.'
     CompanyName = 'DGRSystems, LLC.'
     Copyright = "© 2018 DGRSystems, LLC.  All rights reserved."
-    ModuleVersion = '1.0.0'
+    ModuleVersion = '1.0.2'
 	PowerShellVersion = '5.0'
 	NestedModules = @('RDPCertificate.psm1')
 	ScriptsToProcess = @('ImportScript.ps1')
@@ -12,5 +12,10 @@
 	AliasesToExport = @('setrdcert')
 	CmdletsToExport = ''
 	VariablesToExport = ''
-	FileList = @('ImportScript.ps1', 'RDPCertificate.psd1', 'RDPCertificate.psm1')
+	FileList = @(
+		'ImportScript.ps1',
+		'RDPCertificate.psd1',
+		'RDPCertificate.psm1',
+		'en-US\RDPCertificate.psm1-Help.xml'
+	)
 }

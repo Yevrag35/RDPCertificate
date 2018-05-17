@@ -1,33 +1,8 @@
 ﻿Function Set-RDPCertificate
 {
-    <#
-        .SYNOPSIS
-            Binds a new or existing certificate to the Remote Desktop service.
-        .DESCRIPTION
-            You either pick an existing, installed certificate on your local computer or generate a new certificate with
-            the native Windows 10 "New-SelfSignedCertificate" cmdlet (the module will try to download the "PowerShell PKI"
-            module from the PSGallery if the OS is less than Windows 10).  Using this certificate's thumbprint, the cmdlet
-            binds the thumbprint to the service.  Changes are immediate, and no reboots (or service restarts) are required.
-        .PARAMETER SHA1Thumbprint
-            Specifies an already installed certificate thumbprint (in the LocalMachine certificate store).
-        .PARAMETER WithNewSelfSignedCertificate
-            Specifies that the script will create a new self-signed certificate using either the built-in cmdlet or the PSPKI module.
-        .PARAMETER ValidUntil
-            Specifies the "end" date the newly-created certificate will be good to.  By default, the date will 2 years from the current date.
-        .PARAMETER HashAlgorithm
-            Specifies the hash algorithm the cmdlets will use to generate the certificate with.  By default, it will use SHA-256.  Valid values are "SHA256", "SHA384", and "SHA512".
-        .PARAMETER KeyLength
-            Specifies the key length the cmdlets will generate.  By default, an RSA 2048-bit key is created.  Valid values are "2048", "4096", "8192", and "16384".
-        .EXAMPLE
-            Set-RDPCertificate -SHA1Thumbprint XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-        .EXAMPLE
-            *** Using a generated self-signed cert with the default values ***
-            Set-RDPCertificate -WithNewSelfSignedCertificate
-        .EXAMPLE
-            Set-RDPCertificate -WithNewSelfSignedCertificate -ValidUntil $([datetime]::Now.AddYears(10)) -HashAlgorithm SHA356 -KeyLength 8192
-        .LINK
-            https://github.com/Crypt32/PSPKI
-    #>
+	<#
+		.EXTERNALHELP en-US\RDPCertificate.psm1-Help.xml
+	#>
     [CmdletBinding(PositionalBinding=$false,    
         DefaultParameterSetName='ExistingCert')]
     [alias("setrdcert")]
@@ -105,7 +80,11 @@
                 $opts = @{ Subject = $env:COMPUTERNAME ; NotAfter = $ValidUntil; HashAlgorithm = $HashAlgorithm; KeyLength = $KeyLength }
                 if (![String]::IsNullOrEmpty($env:USERDNSDOMAIN))
                 {
-                    $opts.Add("DnsName", $env:COMPUTERNAME, "$(("$env:COMPUTERNAME.$env:USERDNSDOMAIN").ToLower())")
+                    $opts.Add("DnsName", @($env:COMPUTERNAME, "$(("$env:COMPUTERNAME.$env:USERDNSDOMAIN").ToLower())"))
+                }
+                else
+                {
+                    $opts.Add("DnsName", "$(($env:COMPUTERNAME).ToLower())")
                 }
                 $SHA1Thumbprint = $(New-SelfSignedCertificate @opts).Thumbprint                
             }

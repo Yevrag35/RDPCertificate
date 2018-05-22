@@ -33,6 +33,10 @@
         $aAtt = New-Object System.Management.Automation.AliasAttribute("sha1", "thumb", "Thumbprint")
         $attCol.Add($aAtt)
         $tprints = (Get-ChildItem Cert:\LocalMachine\My).Thumbprint
+        if ($null -eq $tprints)
+        {
+            $tprints = @("No Valid Certificates in the Local PC's Personal Store")
+        }
         $valSet = New-Object System.Management.Automation.ValidateSetAttribute($tprints)
         $attCol.Add($valSet)
         

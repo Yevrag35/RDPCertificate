@@ -3,7 +3,7 @@
 	<#
 		.EXTERNALHELP en-US\RDPCertificate.psm1-Help.xml
 	#>
-    [CmdletBinding(PositionalBinding=$false,    
+    [CmdletBinding(PositionalBinding=$false,
         DefaultParameterSetName='ExistingCert')]
     [alias("setrdcert")]
     param
@@ -39,7 +39,7 @@
         }
         $valSet = New-Object System.Management.Automation.ValidateSetAttribute($tprints)
         $attCol.Add($valSet)
-        
+
         $rtParam = New-Object System.Management.Automation.RuntimeDefinedParameter(
             $name, [string], $attCol
         )
@@ -78,7 +78,7 @@
                 }
                 $opts.Add("SubjectAlternativeName", $names)
                 $SHA1Thumbprint = $(New-SelfSignedCertificateEx @opts).Thumbprint
-            } 
+            }
             else
             {
                 $opts = @{ Subject = $env:COMPUTERNAME ; NotAfter = $ValidUntil; HashAlgorithm = $HashAlgorithm; KeyLength = $KeyLength }
@@ -90,7 +90,7 @@
                 {
                     $opts.Add("DnsName", "$(($env:COMPUTERNAME).ToLower())")
                 }
-                $SHA1Thumbprint = $(New-SelfSignedCertificate @opts).Thumbprint                
+                $SHA1Thumbprint = $(New-SelfSignedCertificate @opts).Thumbprint
             }
         }
     }
@@ -100,7 +100,7 @@
             -Namespace 'root\cimv2\TerminalServices' `
             -Query 'SELECT * FROM Win32_TSGeneralSetting WHERE TerminalName = "RDP-Tcp"' `
             -Property @{ SSLCertificateSHA1Hash = $SHA1Thumbprint }
-            
+
         if ($EnableFirewallRules)
         {
             # I don't use "Set-NetFirewallRule" here because of backwards compatibilty.

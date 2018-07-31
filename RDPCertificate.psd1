@@ -9,10 +9,10 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-# RootModule = ''
+RootModule = 'RDPCertificate.dll'
 
 # Version number of this module.
-ModuleVersion = '1.0.4'
+ModuleVersion = '1.1.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -54,10 +54,16 @@ PowerShellVersion = '5.0'
 # RequiredModules = @()
 
 # Assemblies that must be loaded prior to importing this module
-# RequiredAssemblies = @()
+RequiredAssemblies = @(
+	'Assemblies\DynamicParameter.dll',
+	'Assemblies\Microsoft.Management.Infrastructure.dll',
+	'RDPCertificate.dll',
+	'Assemblies\Security.Cryptography.dll',
+	'System.Web'
+)
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
-ScriptsToProcess = 'ImportScript.ps1'
+# ScriptsToProcess = ''
 
 # Type files (.ps1xml) to be loaded when importing this module
 # TypesToProcess = @()
@@ -66,13 +72,13 @@ ScriptsToProcess = 'ImportScript.ps1'
 # FormatsToProcess = @()
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-NestedModules = @('RDPCertificate.psm1')
+# NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Set-RDPCertificate'
+# FunctionsToExport = @()
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-CmdletsToExport = @()
+CmdletsToExport = @('Get-InstalledRDPCertificate', 'Set-RDPCertificate')
 
 # Variables to export from this module
 # VariablesToExport = @()
@@ -87,8 +93,13 @@ AliasesToExport = 'setrdcert'
 # ModuleList = @()
 
 # List of all files packaged with this module
-FileList = 'ImportScript.ps1', 'RDPCertificate.psd1', 'RDPCertificate.psm1', 
-               'en-US\RDPCertificate.psm1-Help.xml'
+FileList = @(
+	'Assemblies\DynamicParameter.dll',
+	'Assemblies\Microsoft.Management.Infrastructure.dll',
+	'Assemblies\Security.Cryptography.dll',
+	'RDPCertificate.dll',
+	'RDPCertificate.psd1'
+)
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{
@@ -108,7 +119,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'Fixed error that would occur when the personal certificate store was empty.'
+        ReleaseNotes = 'Moved all commands C# and added "Get-InstalledRDPCertificate" cmdlet.'
 
         # External dependent modules of this module
         # ExternalModuleDependencies = ''

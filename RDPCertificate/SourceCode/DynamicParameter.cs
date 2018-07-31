@@ -1,14 +1,14 @@
 ﻿using Dynamic;
-using Microsoft.Management.Infrastructure;
+using Security.Cryptography.X509Certificates;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Management.Automation;
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
-namespace RDP
+namespace RDPCertificate
 {
     public class Certs
     {
@@ -17,17 +17,21 @@ namespace RDP
 
         #endregion
         public Certs() { }
-        public string[] CertPrints;
+        public List<string> CertPrints;
 
         public void GetValidatedItems(StoreLocation store)
         {
             X509Store st = new X509Store(store);
             st.Open(OpenFlags.MaxAllowed);
             X509Certificate2Collection certCol = st.Certificates;
-            CertPrints = new string[certCol.Count];
+            CertPrints = new List<string>();
             for (int i = 0; i < certCol.Count; i++)
             {
-                CertPrints[i] = certCol[i].Thumbprint;
+                X509Certificate2 cert = certCol[i];
+                if (HasPrivateKey(cert))
+                {
+                    CertPrints.Add(cert.Thumbprint);
+                }
             }
             st.Close();
             st.Dispose();
@@ -47,8 +51,18 @@ namespace RDP
                 { "ParameterSetName", "ExistingCert" },
                 { "ValueFromPipelineByPropertyName", true }
             };
-            DynamicParameter dynParam = new DynamicParameter(pName, CertPrints, pAtts, new string[] { "sha1" }, typeof(string));
+            DynamicParameter dynParam = new DynamicParameter(pName, CertPrints.ToArray(), pAtts, new string[] { "sha1" }, typeof(string));
             return dynParam.GenerateLibrary();
+        }
+
+        private bool HasPrivateKey(X509Certificate2 cert)
+        {
+            bool haskey = X509CertificateExtensionMethods.HasCngKey(cert);
+            if (!haskey)
+            {
+                haskey = cert.HasPrivateKey;
+            }
+            return haskey;
         }
     }
 }

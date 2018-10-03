@@ -9,16 +9,32 @@ namespace RDPCertificate
 {
     [Cmdlet(VerbsCommon.Get, "InstalledRDPCertificate")]
     [OutputType(typeof(X509Certificate2))]
+    [CmdletBinding(PositionalBinding = false)]
     public class GetInstalledCertificate : PSCmdlet
     {
         private const string p = "SSLCertificateSHA1Hash";
-        private const string pc = "localhost";
+
+        #region Parameters
+        [Parameter(Mandatory = false, Position = 0)]
+        public string ComputerName = "localhost";
+
+        [Parameter(Mandatory = false)]
+        public AuthOptions Authentication = AuthOptions.Passthrough;
+
+        [Parameter(Mandatory = false)]
+        public PSCredential Credential { get; set; }
+
+        #endregion
 
         protected override void ProcessRecord()
         {
             base.ProcessRecord();
             X509Certificate2 installed;
-            CimSession ses = CimSession.Create(pc);
+            if (Authentication != AuthOptions.Passthrough && Credential == null)
+            {
+                throw new Exception("Any other authentication mechanism other than \"Passthrough\" requires specified credentials!");
+            }
+            CimSession ses = CimStuff.MakeCimSession(ComputerName, Authentication, Credential);
             if (CimStuff.IsCurrentInstalled(ses))
             {
                 installed = GetInstalledCert(ses);

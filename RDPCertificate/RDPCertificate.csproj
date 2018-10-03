@@ -30,13 +30,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DynamicParameter, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>D:\Local_Repos\RDPCertificate\RDPCertificate\Assemblies\DynamicParameter.dll</HintPath>
+    <Reference Include="Dynamic.Parameter">
+      <HintPath>Assemblies\Dynamic.Parameter.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Management.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Reference Assemblies\Microsoft\WMI\v1.0\Microsoft.Management.Infrastructure.dll</HintPath>
+      <HintPath>C:\Program Files (x86)\Reference Assemblies\Microsoft\WMI\v1.0\Microsoft.Management.Infrastructure.dll</HintPath>
     </Reference>
     <Reference Include="Security.Cryptography">
       <HintPath>Assemblies\Security.Cryptography.dll</HintPath>
@@ -45,18 +44,18 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>D:\Local_Repos\RDPCertificate\RDPCertificate\Assemblies\System.Management.Automation.dll</HintPath>
+      <HintPath>Assemblies\System.Management.Automation.dll</HintPath>
     </Reference>
     <Reference Include="System.Web" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="SourceCode\CimStuff.cs" />
-    <Compile Include="SourceCode\CreateNew.cs" />
+    <None Include="SourceCode\CimStuff.cs" />
+    <None Include="SourceCode\CreateNew.cs" />
     <Compile Include="SourceCode\DynamicParameter.cs" />
-    <Compile Include="SourceCode\GetRDPCertificate.cs" />
-    <Compile Include="SourceCode\SetRDPCertificate.cs" />
+    <None Include="SourceCode\GetRDPCertificate.cs" />
+    <None Include="SourceCode\SetRDPCertificate.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -36,6 +36,10 @@ namespace MG.RDP
             else
             {
                 var auth = GetAttributeValue<object>(authOption, typeof(AuthAttribute));
+                if (auth is ImpersonatedAuthenticationMechanism)
+                {
+                    new
+                }
             }
         }
         private RDPOperations(RDPCredential rdpCreds)

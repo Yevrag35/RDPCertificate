@@ -1,10 +1,7 @@
 ﻿using Dynamic;
 using Security.Cryptography.X509Certificates;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
 using System.Management.Automation;
 using System.Security.Cryptography.X509Certificates;
 
@@ -13,57 +10,61 @@ namespace RDPCertificate
     public class Certs : Parameter
     {
         #region Constants
-        public const string pName = "SHA1Thumbrpint";
+        internal const string pName = "SHA1Thumbrpint";
+        private protected static readonly Type type = typeof(string);
+        private protected readonly Dictionary<string, object> atts = new Dictionary<string, object>(3)
+        {
+            { "Mandatory", true },
+            { "Position", 0 },
+            { "ParameterSetName", "LocalCertsOnly" }
+        };
+
+        internal X509Certificate2Collection CertCol;
+
+        public override bool AllowNull { get; set; }
+        public override bool AllowEmptyCollection { get; set; }
+        public override bool AllowEmptyString { get; set; }
+        public override bool ValidateNotNull { get; set; }
+        public override bool ValidateNotNullOrEmpty { get; set; }
 
         #endregion
 
-        public override bool AllowNull => true;
-        public override bool AllowEmptyCollection => false;
-        public override bool AllowEmptyString => false;
-        public override bool ValidateNotNull => false;
-        public override bool ValidateNotNullOrEmpty => false;
-
-
+        #region Constructor
         public Certs()
-            : base(pName, typeof(string))
+            : base(pName, type)
         {
-            AddAliases(new string[1] { "cert" });
-        }
-
-        public void GetValidatedItems(StoreLocation store)
-        {
-            X509Store st = new X509Store(store);
-            st.Open(OpenFlags.MaxAllowed);
-            X509Certificate2Collection certCol = st.Certificates;
-            for (int i = 0; i < certCol.Count; i++)
+            X509Certificate2Collection tempCol = null;
+            using (var st = new X509Store(StoreLocation.LocalMachine))
             {
-                X509Certificate2 cert = certCol[i];
-                if (HasPrivateKey(cert))
+                st.Open(OpenFlags.ReadOnly);
+                tempCol = st.Certificates;
+                for (int c = tempCol.Count - 1; c >= 0; c--)
                 {
-                    ValidatedItems.Add(cert.Thumbprint);
+                    var crt = tempCol[c];
+                    if (!HasPrivateKey(crt))
+                    {
+                        tempCol.Remove(crt);
+                    }
                 }
             }
-            st.Close();
-            st.Dispose();
+            CertCol = tempCol;
+            var arr = new string[CertCol.Count];
+            for (int i = 0; i < CertCol.Count; i++)
+            {
+                var cert = CertCol[i];
+                arr[i] = cert.Thumbprint;
+            }
+            ValidatedItems = arr;
+            Aliases = new string[1] { "sha1" };
+
+            SetParameterAttributes(atts);
+
+            CommitAttributes();
         }
 
-        //public RuntimeDefinedParameterDictionary Generate()
-        //{
-        //    if (CertPrints == null)
-        //    {
-        //        GetValidatedItems(StoreLocation.LocalMachine);
-        //    }
-        //    Collection<Attribute> colAtt = new Collection<Attribute>();
-        //    IDictionary pAtts = new Dictionary<string, object>()
-        //    {
-        //        { "Mandatory", true },
-        //        { "Position", 0 },
-        //        { "ParameterSetName", "ExistingCert" },
-        //        { "ValueFromPipelineByPropertyName", true }
-        //    };
-        //    DynamicParameter dynParam = new DynamicParameter(pName, CertPrints.ToArray(), pAtts, new string[] { "sha1" }, typeof(string));
-        //    return dynParam.GenerateLibrary();
-        //}
+        #endregion
+
+        #region Methods
 
         private bool HasPrivateKey(X509Certificate2 cert)
         {
@@ -75,9 +76,14 @@ namespace RDPCertificate
             return haskey;
         }
 
-        public override string ToString()
-        {
-            return this.GetType().FullName;
-        }
+        public override string ToString() => this.GetType().FullName;
+
+        #endregion
+
+        #region Operators/Casts
+        public static implicit operator Library(Certs certs) =>
+            new Library() { { certs.Name, certs } };
+
+        #endregion
     }
 }

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
-namespace MG.RDP
+namespace MG.RDP.Certificates
 {
     public static class NewCertificate
     {
@@ -15,7 +15,7 @@ namespace MG.RDP
 
         #region Constructors
         public static X509Certificate2 GenerateNewCert(string subject, string friendlyName, DateTime validUntil,
-            HashAlgorithm hash, KeyLengths keyLength)
+            Algorithm hash, int keyLength)
         {
             if (ExtensionsToAdd == null)
                 ExtensionsToAdd = new List<CX509Extension>();
@@ -24,28 +24,11 @@ namespace MG.RDP
             SetKeyUsages();
             SetBasicConstraints();
 
-            CX509CertificateRequestCertificate certReq = CreateRequest(keyLength);
+            CX509CertificateRequestCertificate certReq = CreateRequest((KeyLengths)keyLength);
             certReq = FinalizeRequest(certReq, subject, validUntil, hash);
             X509Certificate2 cert = CreateNewCertificate(certReq, friendlyName);
             ExtensionsToAdd.Clear();
             return cert;
-        }
-
-        #endregion
-
-        #region Enums
-        public enum HashAlgorithm : int
-        {
-            SHA256 = 0,
-            SHA384 = 1,
-            SHA512 = 2
-        }
-        public enum KeyLengths : int
-        {
-            Two048 = 2048,
-            Four096 = 4096,
-            Eight192 = 8192,
-            Sixteen384 = 16384
         }
 
         #endregion
@@ -112,7 +95,7 @@ namespace MG.RDP
         }
 
         private static CX509CertificateRequestCertificate FinalizeRequest(CX509CertificateRequestCertificate cert,
-            string subjectName, DateTime validUntil, HashAlgorithm algorithm)
+            string subjectName, DateTime validUntil, Algorithm algorithm)
         {
             var subDN = new CX500DistinguishedName();
             subDN.Encode("CN=" + subjectName, X500NameFlags.XCN_CERT_NAME_STR_NONE);
@@ -152,4 +135,22 @@ namespace MG.RDP
 
         #endregion
     }
+
+    #region Enums
+    public enum Algorithm : int
+    {
+        SHA256 = 0,
+        SHA384 = 1,
+        SHA512 = 2
+    }
+
+    public enum KeyLengths : int
+    {
+        Two048 = 2048,
+        Four096 = 4096,
+        Eight192 = 8192,
+        Sixteen384 = 16384
+    }
+
+    #endregion
 }

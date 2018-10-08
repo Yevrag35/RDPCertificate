@@ -1,8 +1,9 @@
-﻿using System.Management.Automation;
+﻿using System;
+using System.Management.Automation;
 
 namespace MG.RDP
 {
-    [Cmdlet(VerbsCommon.Get, "InstalledRDPCertificate")]
+    [Cmdlet(VerbsCommon.Get, "RDPCertificate")]
     [OutputType(typeof(CurrentCertificate))]
     [CmdletBinding(PositionalBinding = false)]
     public class GetInstalledCertificate : PSCmdlet
@@ -11,22 +12,29 @@ namespace MG.RDP
         private protected const string lh = "localhost";
 
         #region Parameters
-        [Parameter(Mandatory = false, DontShow = true)]
-        public string ComputerName = lh;
-
-        [Parameter(Mandatory = false, Position = 1)]
-        public AuthOptions Authentication = AuthOptions.Passthrough;
 
         [Parameter(Mandatory = false, Position = 0)]
         public PSCredential Credential = null;
+
+        [Parameter(Mandatory = false, Position = 1)]
+        public string ComputerName = lh;
 
         #endregion
 
         protected override void ProcessRecord()
         {
             base.ProcessRecord();
-            var rdp = new RDPOperations(Authentication, ComputerName, Credential);
-            WriteObject(rdp.GetCurrentCertificate());
+            var rdp = new RDPOperations(ComputerName, Credential);
+            bool isRemote = false;
+            if (ComputerName != lh && ComputerName != Environment.GetEnvironmentVariable("COMPUTERNAME"))
+            {
+                isRemote = true;
+                if (Credential != null)
+                {
+                    WriteWarning("Checking the presence of the remote certificate is not possible with explicit credentials.");
+                }
+            }
+            WriteObject(rdp.GetCurrentCertificate(isRemote));
         }
     }
 }

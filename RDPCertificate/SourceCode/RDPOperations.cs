@@ -1,9 +1,9 @@
-﻿using MG.Attributes;
-using Microsoft.Management.Infrastructure;
+﻿using Microsoft.Management.Infrastructure;
 using Microsoft.Management.Infrastructure.Options;
 using Security.Cryptography.X509Certificates;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Management.Automation;
@@ -13,7 +13,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace MG.RDP
 {
-    public class RDPOperations : AttributeResolver
+    public class RDPOperations
     {
         private X509Certificate2 _curCert;
         private readonly CimSession _cim;
@@ -26,47 +26,98 @@ namespace MG.RDP
 
         public X509Certificate2 CurrentCertificate => _curCert;
         public CimSession CimSession => _cim;
+        private protected bool UsingCredentials = false;
 
-        public RDPOperations(AuthOptions authOption = AuthOptions.Passthrough, string machineName = lh,PSCredential psCreds = null)
+        public RDPOperations(string machineName = lh,PSCredential psCreds = null)
         {
-            if (machineName == lh || machineName == pc)
+            var dComOpts = new DComSessionOptions()
             {
-                _cim = CimSession.Create(pc);
-            }
-            else
+                Culture = CultureInfo.CurrentCulture,
+                UICulture = CultureInfo.CurrentUICulture,
+                PacketIntegrity = true,
+                PacketPrivacy = true,
+                Timeout = new TimeSpan(0)
+            };
+            if (psCreds != null)
             {
-                var auth = GetAttributeValue<object>(authOption, typeof(AuthAttribute));
-                if (auth is ImpersonatedAuthenticationMechanism)
-                {
-                    new
-                }
+                UsingCredentials = true;
+                var user = RDPCredential.ParseUser(psCreds);
+                var dom = RDPCredential.ParseDomain(psCreds);
+                var cimCred = new CimCredential(PasswordAuthenticationMechanism.Default,
+                    dom, user, psCreds.Password);
+                dComOpts.AddDestinationCredentials(cimCred);
             }
-        }
-        private RDPOperations(RDPCredential rdpCreds)
-        {
-
+            _cim = CimSession.Create(machineName, dComOpts);
         }
 
         #region Methods
-        public CurrentCertificate GetCurrentCertificate()
+        public CurrentCertificate GetCurrentCertificate(bool IsRemote = false)
         {
             _curCert = null;
+            RemoteSearchStatus status;
             CimInstance c = GetCimInstance(_cim);
             var thumbprint = c.CimInstanceProperties[p].Value as string;
-            using (var store = new X509Store(StoreLocation.LocalMachine))
+            if (!IsRemote)
             {
-                store.Open(OpenFlags.MaxAllowed);
-                X509Certificate2Collection certs = store.Certificates.Find(X509FindType.FindByThumbprint, thumbprint, false);
-                try
+                using (var store = new X509Store(StoreLocation.LocalMachine))
                 {
-                    _curCert = certs.Cast<X509Certificate2>().ToArray().FirstOrDefault();
+                    store.Open(OpenFlags.ReadOnly);
+                    X509Certificate2Collection certs = store.Certificates.Find(X509FindType.FindByThumbprint, thumbprint, false);
+                    try
+                    {
+                        _curCert = certs.Cast<X509Certificate2>().ToArray().FirstOrDefault();
+                    }
+                    catch (ArgumentNullException)
+                    {
+                        throw new ArgumentNullException("certs");
+                    }
                 }
-                catch (ArgumentNullException ex)
+                return new CurrentCertificate(thumbprint, _curCert, RemoteSearchStatus.NotNeeded);
+            }
+            else if (IsRemote && !UsingCredentials)
+            {
+                // Unfortunately, this doesn't support explicit credential authentication.
+                // ...so if you don't have access with your current session credentials, the
+                // best info you'll get back is the thumbprint by itself.
+                status = RemoteSearchStatus.Performed;
+
+                // Check "RemoteDesktop" store first...
+                using (var rdStore = new X509Store(@"\\" + _cim.ComputerName + "\\Remote Desktop", StoreLocation.LocalMachine))
                 {
-                    throw new ArgumentNullException("certs");
+                    rdStore.Open(OpenFlags.ReadOnly);
+                    X509Certificate2Collection certs = rdStore.Certificates.Find(X509FindType.FindByThumbprint, thumbprint, false);
+                    try
+                    {
+                        _curCert = certs.Cast<X509Certificate2>().ToArray().FirstOrDefault();
+                    }
+                    catch (ArgumentNullException)
+                    {
+                        _curCert = null;
+                    }
+                }
+                // If not found in the RD Store, check the Personal/My store...
+                if (_curCert == null)
+                {
+                    using (var myStore = new X509Store(@"\\" + _cim.ComputerName + "\\My", StoreLocation.LocalMachine))
+                    {
+                        myStore.Open(OpenFlags.ReadOnly);
+                        X509Certificate2Collection certs = myStore.Certificates.Find(X509FindType.FindByThumbprint, thumbprint, false);
+                        try
+                        {
+                            _curCert = certs.Cast<X509Certificate2>().ToArray().FirstOrDefault();
+                        }
+                        catch (ArgumentNullException)
+                        {
+                            _curCert = null;
+                        }
+                    }
                 }
             }
-            return new CurrentCertificate(thumbprint, _curCert);
+            else
+            {
+                status = RemoteSearchStatus.NotPerformed;
+            }
+            return new CurrentCertificate(thumbprint, _curCert, status);
         }
 
         private protected CimInstance GetCimInstance(CimSession ses) =>
@@ -79,16 +130,26 @@ namespace MG.RDP
     {
         private readonly string _th;
         private readonly X509Certificate2 _cert = null;
+        private readonly RemoteSearchStatus _stat;
 
         public string PublishedThumbprint => _th;
-        public bool Exists => _cert != null;
+        public RemoteSearchStatus RemoteSearch => _stat;
+        public bool? Exists => _stat != RemoteSearchStatus.NotPerformed ? _cert != null : (bool?)null;
         public X509Certificate2 Certificate => _cert;
 
-        internal CurrentCertificate(string pubThumb, X509Certificate2 cert)
+        internal CurrentCertificate(string pubThumb, X509Certificate2 cert, RemoteSearchStatus status)
         {
             _th = pubThumb;
             _cert = cert;
+            _stat = status;
         }
+    }
+
+    public enum RemoteSearchStatus
+    {
+        NotNeeded = 0,
+        Performed = 1,
+        NotPerformed = 2
     }
 
     public class RDPCredential : CimCredential
@@ -107,8 +168,8 @@ namespace MG.RDP
         }
 
         #region Operators/Casts
-        public static implicit operator RDPCredential(PSCredential psc) => 
-            new RDPCredential(PasswordAuthenticationMechanism.Negotiate, psc);
+        public static explicit operator RDPCredential(PSCredential psc) => 
+            new RDPCredential(PasswordAuthenticationMechanism.Default, psc);
 
         #endregion
 
@@ -116,9 +177,9 @@ namespace MG.RDP
         {
             string un = psc.UserName;
             string domain = null;
-            if (un.Contains("\\"))
+            if (un.Contains(@"\"))
             {
-                domain = un.Split(new string[1] { @"\\" }, StringSplitOptions.RemoveEmptyEntries).First();
+                domain = un.Split(new string[1] { @"\" }, StringSplitOptions.RemoveEmptyEntries).First();
             }
             else if (un.Contains("@"))
             {
@@ -132,7 +193,7 @@ namespace MG.RDP
             string real = null;
             if (un.Contains("\\"))
             {
-                real = un.Split(new string[1] { @"\\" }, StringSplitOptions.RemoveEmptyEntries).Last();
+                real = un.Split(new string[1] { @"\" }, StringSplitOptions.RemoveEmptyEntries).Last();
             }
             else if (un.Contains("@"))
             {

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Management.Automation;
 using System.Security.Cryptography.X509Certificates;
 
-namespace RDPCertificate
+namespace MG.RDP
 {
     public class Certs : Parameter
     {
@@ -14,9 +14,9 @@ namespace RDPCertificate
         private protected static readonly Type type = typeof(string);
         private protected readonly Dictionary<string, object> atts = new Dictionary<string, object>(3)
         {
-            { "Mandatory", true },
+            { "Mandatory", false },
             { "Position", 0 },
-            { "ParameterSetName", "LocalCertsOnly" }
+            { "ParameterSetName", "SpecifyCertLocally" }
         };
 
         internal X509Certificate2Collection CertCol;

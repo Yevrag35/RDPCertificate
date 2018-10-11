@@ -120,6 +120,18 @@ namespace MG.RDP
             return new CurrentCertificate(thumbprint, _curCert, status);
         }
 
+        public void SetRDPCertificate(string thumbprint)
+        {
+            CimInstance c = GetCimInstance(_cim);
+            var check = !c.CimInstanceProperties[p].Value.Equals(thumbprint);
+            if (check)
+            {
+                var prop = c.CimInstanceProperties[p];
+                prop.Value = thumbprint;
+                _cim.ModifyInstance(c);
+            }
+        }
+
         private protected CimInstance GetCimInstance(CimSession ses) =>
             ses.QueryInstances(ns, dia, query).ToArray().FirstOrDefault();
 

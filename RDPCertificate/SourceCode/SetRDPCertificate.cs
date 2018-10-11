@@ -11,51 +11,49 @@ using System.Management.Automation;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
-namespace RDPCertificate
+namespace MG.RDP
 {
     [Cmdlet(VerbsCommon.Set, "RDPCertificate", SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.High,
-        DefaultParameterSetName = "LocalCertsOnly")]
+        DefaultParameterSetName = "SpecifyCertLocally")]
     [OutputType(typeof(void))]
     [CmdletBinding(PositionalBinding = false)]
     public class Certificate : PSCmdlet, IDynamicParameters
     {
         #region Fields
         private Library rtDict = null;
+        private bool IsRemote = false;
         private ShouldProcessReason reason;
         private Certs _c;
         private string chosen;
+        private protected const string lh = "localhost";
 
         #endregion
 
         #region Parameters
-        [Parameter(Mandatory = true, ParameterSetName = "CreateNewCertRemotely")]
         [Parameter(Mandatory = true, ParameterSetName = "SpecifyCertRemotely")]
         public string ComputerName;
-
-        [Parameter(Mandatory = true, ParameterSetName = "CreateNewCertRemotely")]
-        [Parameter(Mandatory = true, ParameterSetName = "SpecifyCertRemotely")]
+        
+        [Parameter(Mandatory = false, ParameterSetName = "SpecifyCertRemotely")]
         public string RemoteThumbprint { get; set; }
 
+        [Parameter(Mandatory = false)]
+        public PSCredential Credential = null;
 
         private bool _sw;
-        [Parameter(Mandatory = true, ParameterSetName = "CreateNewCertRemotely")]
-        [Parameter(Mandatory = true, ParameterSetName = "CreateNewCertLocally")]
+        [Parameter(Mandatory = true, ParameterSetName = "NewCertLocally")]
         public SwitchParameter WithNewSelfSignedCert
         {
             get => _sw;
             set => _sw = value;
         }
 
-        [Parameter(Mandatory = false, ParameterSetName = "CreateNewCertRemotely")]
-        [Parameter(Mandatory = false, ParameterSetName = "CreateNewCertLocally")]
-        public DateTime ValidUntil = DateTime.Now.AddYears(2);
+        [Parameter(Mandatory = false, ParameterSetName = "NewCertLocally")]
+        public DateTime ValidUntil = DateTime.Now.AddYears(1);
 
-        [Parameter(Mandatory = false, ParameterSetName = "CreateNewCertRemotely")]
-        [Parameter(Mandatory = false, ParameterSetName = "CreateNewCertLocally")]
+        [Parameter(Mandatory = false, ParameterSetName = "NewCertLocally")]
         public Algorithm HashAlgorithm = Algorithm.SHA256;
 
-        [Parameter(Mandatory = false, ParameterSetName = "CreateNewCertRemotely")]
-        [Parameter(Mandatory = false, ParameterSetName = "CreateNewCertLocally")]
+        [Parameter(Mandatory = false, ParameterSetName = "NewCertLocally")]
         [ValidateSet("2048", "4096", "8192", "16384", IgnoreCase = true)]
         public int KeyLength = 2048;
 
@@ -63,12 +61,12 @@ namespace RDPCertificate
 
         public object GetDynamicParameters()
         {
-            if (string.IsNullOrEmpty(ComputerName))
+            if (string.IsNullOrEmpty(ComputerName) || _sw == false)
             {
                 if (_c == null)
-                {
-                    rtDict = new Certs();
-                }
+                    _c = new Certs();
+
+                rtDict = _c;
             }
             else
             {
@@ -80,12 +78,33 @@ namespace RDPCertificate
         protected override void BeginProcessing()
         {
             base.BeginProcessing();
-            chosen = rtDict != null ? 
-                rtDict[_c.Name].Value as string : 
-                !string.IsNullOrEmpty(RemoteThumbprint) ?
-                    RemoteThumbprint : null;
+            if (!string.IsNullOrEmpty(RemoteThumbprint) && !string.IsNullOrEmpty(ComputerName))
+            {
+                IsRemote = true;
+                chosen = RemoteThumbprint;
+            }
+            else if (_sw)
+            {
+                chosen = NewCertificate.GenerateNewCert(Environment.GetEnvironmentVariable("COMPUTERNAME"),
+                    "RDP Certificate", ValidUntil, HashAlgorithm, KeyLength).Thumbprint;
+            }
+            else
+            {
+                chosen = rtDict[_c.Name].Value as string;
+            }
+        }
 
-            WriteObject(chosen);
+        protected override void ProcessRecord()
+        {
+            base.ProcessRecord();
+            string pc;
+            if (!IsRemote)
+                pc = lh;
+            else
+                pc = ComputerName;
+
+            var rdp = new RDPOperations(pc, Credential);
+            rdp.SetRDPCertificate(chosen);
         }
 
         //protected override void ProcessRecord()

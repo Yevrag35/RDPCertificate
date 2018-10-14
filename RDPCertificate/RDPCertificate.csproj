@@ -7,10 +7,11 @@
     <ProjectGuid>{372C0132-BE21-46B1-A21D-8B92677F2E02}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>RDPCertificate</RootNamespace>
+    <RootNamespace>MG.RDP</RootNamespace>
     <AssemblyName>RDPCertificate</AssemblyName>
-    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -20,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
@@ -28,14 +30,17 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Dynamic.Parameter">
+    <Reference Include="Dynamic.Parameter, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>Assemblies\Dynamic.Parameter.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Management.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>C:\Program Files (x86)\Reference Assemblies\Microsoft\WMI\v1.0\Microsoft.Management.Infrastructure.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Security.Cryptography">
       <HintPath>Assemblies\Security.Cryptography.dll</HintPath>
@@ -45,17 +50,20 @@
     <Reference Include="System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Assemblies\System.Management.Automation.dll</HintPath>
+      <Private>False</Private>
     </Reference>
-    <Reference Include="System.Web" />
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="SourceCode\CimStuff.cs" />
-    <None Include="SourceCode\CreateNew.cs" />
+    <None Include="Module\RDPCertificate.psd1" />
+    <None Include="Module\RemoteActions.psm1" />
+    <None Include="SourceCode\AuthOptions.cs" />
+    <Compile Include="SourceCode\RDPOperations.cs" />
+    <None Include="SourceCode.Old\CimStuff.cs" />
+    <Compile Include="SourceCode\NewCertificate.cs" />
     <Compile Include="SourceCode\DynamicParameter.cs" />
-    <None Include="SourceCode\GetRDPCertificate.cs" />
-    <None Include="SourceCode\SetRDPCertificate.cs" />
+    <Compile Include="SourceCode\GetRDPCertificate.cs" />
+    <Compile Include="SourceCode\SetRDPCertificate.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

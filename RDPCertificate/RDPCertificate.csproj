@@ -40,6 +40,7 @@
     <Reference Include="Microsoft.Management.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>C:\Program Files (x86)\Reference Assemblies\Microsoft\WMI\v1.0\Microsoft.Management.Infrastructure.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Security.Cryptography">
       <HintPath>Assemblies\Security.Cryptography.dll</HintPath>
@@ -54,6 +55,8 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Module\RDPCertificate.psd1" />
+    <None Include="Module\RemoteActions.psm1" />
     <None Include="SourceCode\AuthOptions.cs" />
     <Compile Include="SourceCode\RDPOperations.cs" />
     <None Include="SourceCode.Old\CimStuff.cs" />

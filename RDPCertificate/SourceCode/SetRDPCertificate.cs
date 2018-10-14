@@ -15,6 +15,7 @@ namespace MG.RDP
 {
     [Cmdlet(VerbsCommon.Set, "RDPCertificate", SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.High,
         DefaultParameterSetName = "SpecifyCertLocally")]
+    [Alias("setrdcert")]
     [OutputType(typeof(void))]
     [CmdletBinding(PositionalBinding = false)]
     public class Certificate : PSCmdlet, IDynamicParameters
@@ -59,6 +60,8 @@ namespace MG.RDP
 
         #endregion
 
+        private protected NewCertificate newcer = new NewCertificate();
+
         public object GetDynamicParameters()
         {
             if (string.IsNullOrEmpty(ComputerName) || _sw == false)
@@ -83,57 +86,21 @@ namespace MG.RDP
                 IsRemote = true;
                 chosen = RemoteThumbprint;
             }
-            else if (_sw)
-            {
-                chosen = NewCertificate.GenerateNewCert(Environment.GetEnvironmentVariable("COMPUTERNAME"),
-                    "RDP Certificate", ValidUntil, HashAlgorithm, KeyLength).Thumbprint;
-            }
             else
             {
-                chosen = rtDict[_c.Name].Value as string;
+                chosen = _sw
+                    ? newcer.GenerateNewCert(Environment.GetEnvironmentVariable("COMPUTERNAME"),
+                                    "RDP Certificate", ValidUntil, HashAlgorithm, KeyLength).Thumbprint
+                    : rtDict[_c.Name].Value as string;
             }
         }
 
         protected override void ProcessRecord()
         {
             base.ProcessRecord();
-            string pc;
-            if (!IsRemote)
-                pc = lh;
-            else
-                pc = ComputerName;
-
+            string pc = !IsRemote ? lh : ComputerName;
             var rdp = new RDPOperations(pc, Credential);
             rdp.SetRDPCertificate(chosen);
         }
-
-        //protected override void ProcessRecord()
-        //{
-        //    base.ProcessRecord();
-        //    CimSession ses = CimSession.Create(pc);
-        //    if (!CimStuff.IsCurrentInstalled(ses) || ShouldProcess("Changing SHA1Thumbprint for RDP", "Performing a CimInstance Modification", "Change the encryption certificate for RDP", out reason))
-        //        switch (ParameterSetName)
-        //        {
-        //            case "ExistingCert":
-        //                if (rtDict != null)
-        //                {
-        //                    chosen = rtDict[_c.pName].Value as string;
-        //                }
-        //                if (String.IsNullOrEmpty(chosen))
-        //                {
-        //                    throw new Exception("Cannot set certificate with a NULL thumbprint!");
-        //                }
-        //                WriteVerbose("Setting Thumbprint for RDP services...");
-        //                CimStuff.SetCertificate(ses, chosen);
-        //                break;
-        //            case "CreateNewCert":
-        //                WriteVerbose("Creating new certificate...");
-        //                CreateNew creator = new CreateNew(ValidUntil, HashAlgorithm, (CreateNew.KeyLengths)KeyLength);
-        //                X509Certificate2 newCert = creator.GenerateCertificate();
-        //                WriteVerbose("Setting Thumbprint for RDP services to " + newCert.Thumbprint + "...");
-        //                CimStuff.SetCertificate(ses, newCert.Thumbprint);
-        //                break;
-        //        }
-        //}
     }
 }

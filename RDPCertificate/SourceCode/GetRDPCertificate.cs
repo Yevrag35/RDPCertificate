@@ -4,6 +4,7 @@ using System.Management.Automation;
 namespace MG.RDP
 {
     [Cmdlet(VerbsCommon.Get, "RDPCertificate")]
+    [Alias("Get-InstalledRDPCertificate", "getrdcert")]
     [OutputType(typeof(CurrentCertificate))]
     [CmdletBinding(PositionalBinding = false)]
     public class GetInstalledCertificate : PSCmdlet

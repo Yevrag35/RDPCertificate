@@ -6,15 +6,17 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace MG.RDP.Certificates
 {
-    public static class NewCertificate
+    public class NewCertificate
     {
         private const string provName = "Microsoft Enhanced RSA and AES Cryptographic Provider";
-        private static readonly string[] EnhancedUsages = new string[1] { "Server Authentication" };
+        private readonly string[] EnhancedUsages = new string[1] { "Server Authentication" };
 
-        private static List<CX509Extension> ExtensionsToAdd;
+        private List<CX509Extension> ExtensionsToAdd;
+
+        public NewCertificate() { }
 
         #region Constructors
-        public static X509Certificate2 GenerateNewCert(string subject, string friendlyName, DateTime validUntil,
+        public X509Certificate2 GenerateNewCert(string subject, string friendlyName, DateTime validUntil,
             Algorithm hash, int keyLength)
         {
             if (ExtensionsToAdd == null)
@@ -35,7 +37,7 @@ namespace MG.RDP.Certificates
 
         #region Methods
 
-        private static void SetEnhancedUsages()
+        private void SetEnhancedUsages()
         {
             var oids = new CObjectIds();
 
@@ -52,7 +54,7 @@ namespace MG.RDP.Certificates
             ExtensionsToAdd.Add((CX509Extension)eku);
         }
 
-        private static void SetKeyUsages()
+        private void SetKeyUsages()
         {
             var ku = new CX509ExtensionKeyUsage
             {
@@ -64,7 +66,7 @@ namespace MG.RDP.Certificates
             ExtensionsToAdd.Add((CX509Extension)ku);
         }
 
-        private static void SetBasicConstraints()
+        private void SetBasicConstraints()
         {
             var bc = new CX509ExtensionBasicConstraints();
             bc.InitializeEncode(false, -1);
@@ -72,7 +74,7 @@ namespace MG.RDP.Certificates
             ExtensionsToAdd.Add((CX509Extension)bc);
         }
 
-        private static CX509CertificateRequestCertificate CreateRequest(KeyLengths keyLength)
+        private CX509CertificateRequestCertificate CreateRequest(KeyLengths keyLength)
         {
             var pk = new CX509PrivateKey
             {
@@ -94,7 +96,7 @@ namespace MG.RDP.Certificates
             return req;
         }
 
-        private static CX509CertificateRequestCertificate FinalizeRequest(CX509CertificateRequestCertificate cert,
+        private CX509CertificateRequestCertificate FinalizeRequest(CX509CertificateRequestCertificate cert,
             string subjectName, DateTime validUntil, Algorithm algorithm)
         {
             var subDN = new CX500DistinguishedName();
@@ -119,7 +121,7 @@ namespace MG.RDP.Certificates
             return cert;
         }
 
-        private static X509Certificate2 CreateNewCertificate(CX509CertificateRequestCertificate cert, string friendlyName)
+        private X509Certificate2 CreateNewCertificate(CX509CertificateRequestCertificate cert, string friendlyName)
         {
             var enr = new CX509Enrollment
             {

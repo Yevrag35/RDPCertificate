@@ -139,3 +139,115 @@
         }
     }
 }
+
+Function New-RemoteRDPSignedCertificate()
+{
+    [CmdletBinding(DefaultParameterSetName="ByComputerName")]
+    [OutputType([System.Security.Cryptography.X509Certificates.X509Certificate2])]
+    param
+    (
+        [parameter(Mandatory=$true, ParameterSetName="ByComputerName", Position=0)]
+        [string] $ComputerName,
+
+        [parameter(Mandatory=$true, ParameterSetName="ByPSSession", ValueFromPipeline=$true)]
+        [System.Management.Automation.Runspaces.PSSession]
+        $PSSession,
+
+        [parameter(Mandatory=$false,Position=1)]
+        [string] $TemplateId = "1.3.6.1.4.1.311.21.8.12017375.10856495.934812.8687423.15807460.10.5731641.6795722",
+
+        [parameter(Mandatory=$false,Position=2)]
+        [string[]] $SubjectAlternativeNames
+    )
+    BEGIN
+    {
+        if ($PSBoundParameters["ComputerName"])
+        {
+            $PSSession = New-PSSession -ComputerName $ComputerName;
+        }
+        $SessionArgs = @{ TemplateId = $TemplateId }
+        if ($PSBoundParameters["SubjectAlternativeNames"])
+        {
+            $list = New-Object 'System.Collections.Generic.List[string]' $SubjectAlternativeNames.Length;
+            foreach ($n in $SubjectAlternativeNames)
+            {
+                $list.Add($n)
+            }
+            $SessionArgs.DnsNames = $list;
+        }
+    }
+    PROCESS
+    {
+        $cert = Invoke-Command -Session $PSSession -ArgumentList $SessionArgs -HideComputerName -ScriptBlock {
+            param
+            (
+                [hashtable] $ArgList = $args[0]
+            )
+            $pkcs10 = New-Object -com "X509Enrollment.CX509CertificateRequestPkcs10.1";
+            $pkcs10.InitializeFromTemplateName(2, $ArgList.TemplateId)
+
+            $objDN = New-Object -com 'X509Enrollment.CX500DistinguishedName.1';
+            $objDN.Encode("CN=$env:COMPUTERNAME", 0);
+            $pkcs10.Subject = $objDN;
+
+            if ($null -ne $ArgList.DnsNames)
+            {
+                $altNames = New-Object -com 'X509Enrollment.CAlternativeNames.1';
+                $extNames = New-Object -com 'X509Enrollment.CX509ExtensionAlternativeNames.1';
+                if ($true -notin $ArgList.DnsNames.ToArray().ForEach({[string]::Equals($_, $env:COMPUTERNAME, [System.StringComparison]::OrdinalIgnoreCase)}))
+                {
+                    $ArgList.DnsNames.Insert(0, $env:COMPUTERNAME);
+                }
+                foreach ($name in $ArgList.DnsNames)
+                {
+                    $altName = New-Object -com 'X509Enrollment.CAlternativeName.1';
+                    $altName.InitializeFromString(3, $name);
+                    $altNames.Add($altName);
+                }
+                $extNames.InitializeEncode($altNames);
+                $pkcs10.X509Extensions.Add($extNames);
+            }
+
+            $objEnroll = New-Object -com 'X509Enrollment.CX509Enrollment.1';
+            $objEnroll.InitializeFromRequest($pkcs10);
+
+            $strRequest = $objEnroll.CreateRequest(1);       # With BASE64-Encoding
+
+            ### Create the Enrollment Request ###
+            $certConfig = New-Object -com 'CertificateAuthority.Config';
+            $certRequest = New-Object -com 'CertificateAuthority.Request';
+            $caConfig = $certConfig.GetConfig(0);
+
+            ### Submit the Request ###
+            $disposition = $certRequest.Submit(
+                1,
+                $strRequest,
+                $null,
+                $caConfig
+            );
+
+            if (3 -ne $disposition)  # Not enrolled
+            {
+                throw "Certificate could not be enrolled!";
+            }
+
+            ### Get the Certificate ###
+            $strCert = $certRequest.GetCertificate(257);     # CR_OUT_BASE64 | CR_OUT_CHAIN
+
+            ### Install the Response ###
+            $objEnroll.InstallResponse(0, $strCert, 1, $null);
+
+            $justCert = $certRequest.GetCertificate(1);      # CR_OUT_BASE64
+            [byte[]]$bytes = [System.Convert]::FromBase64String($justCert);
+
+            ### Now use it as the RDP certificate ###
+            $rdpCert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($bytes);
+            $inst = Get-CimInstance -Namespace 'root\cimv2\TerminalServices' -ClassName "Win32_TSGeneralSetting" -Filter 'TerminalName = "RDP-Tcp"';
+            $inst | Set-CimInstance -Property @{ SSLCertificateSHA1Hash = $rdpCert.Thumbprint };
+
+            return $rdpCert;
+        };
+
+        Write-Output $cert -NoEnumerate;
+    }
+}

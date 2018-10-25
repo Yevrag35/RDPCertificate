@@ -12,7 +12,7 @@
 RootModule = 'RDPCertificate.dll'
 
 # Version number of this module.
-ModuleVersion = '2.1.0'
+ModuleVersion = '2.2.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -74,7 +74,10 @@ RequiredAssemblies = @(
 NestedModules = @('RemoteActions.psm1')
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = @('New-RemoteRDPCertificate')
+FunctionsToExport = @(
+	'New-RemoteRDPCertificate',
+	'New-RemoteRDPSignedCertificate'
+)
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @('Get-RDPCertificate', 'Set-RDPCertificate')
@@ -106,7 +109,7 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        Tags = 'RDP','Remote','Desktop','Certificate','Self-Signed','new','external','help','generate','thumbprint',
+        Tags = 'RDP','Remote','Desktop','Certificate','Self', 'Signed', 'new','external','help','generate','thumbprint',
 			'Cim', 'CimSession', 'PSSession', 'winrm'
 
         # A URL to the license for this module.
@@ -119,7 +122,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'Adding a new, strictly, PowerShell function specifically for creating a self-signed cert on a remote machine ("New-RemoteRDPCertificate").'
+        ReleaseNotes = 'New-RemoteRDPSignedCertificate for those with CA Templates.'
 
         # External dependent modules of this module
         # ExternalModuleDependencies = ''

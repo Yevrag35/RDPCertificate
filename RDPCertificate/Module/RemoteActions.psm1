@@ -153,14 +153,42 @@ Function New-RemoteRDPSignedCertificate()
         [System.Management.Automation.Runspaces.PSSession]
         $PSSession,
 
-        [parameter(Mandatory=$false,Position=1)]
-        [string] $TemplateId = "1.3.6.1.4.1.311.21.8.12017375.10856495.934812.8687423.15807460.10.5731641.6795722",
+        # [parameter(Mandatory=$false,Position=1)]
+        # [string] $TemplateId = "1.3.6.1.4.1.311.21.8.12017375.10856495.934812.8687423.15807460.10.5731641.6795722",
 
         [parameter(Mandatory=$false,Position=2)]
         [string[]] $SubjectAlternativeNames
     )
+    DynamicParam
+    {
+        $pName = "CertificateTemplate";
+        $rtDict = New-Object System.Management.Automation.RuntimeDefinedParameterDictionary;
+        $attCol = New-Object 'System.Collections.ObjectModel.Collection[System.Attribute]';
+        $pAtt = New-Object System.Management.Automation.ParameterAttribute -Property @{
+            Mandatory = $true
+            Position = 1
+        };
+        $attCol.Add($pAtt);
+
+        if ($null -eq $global:oids)
+        {
+            $cts = 'LDAP://CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration';
+            $root = [adsi]'';
+            $rootDN = $root.distinguishedName[0];
+            $fullDN = "$cts,$rootDN";
+
+            $temps = [adsi]$fullDN;
+            $global:oids = $temps.Children.ForEach({[pscustomobject]@{ Name = $_.name[0]; OID = $_.'msPKI-Cert-Template-OID'[0] }});
+        }
+        $valSet = New-Object System.Management.Automation.ValidateSetAttribute($global:oids.Name);
+        $attCol.Add($valSet);
+        $rtParam = New-Object System.Management.Automation.RuntimeDefinedParameter($pName, [string], $attCol);
+        $rtDict.Add($pName, $rtParam);
+        return $rtDict;
+    }
     BEGIN
     {
+        $TemplateId = $($global:oids | ? { $_.Name -eq $PSBoundParameters["Template"]}).OID;
         if ($PSBoundParameters["ComputerName"])
         {
             $PSSession = New-PSSession -ComputerName $ComputerName;
@@ -184,7 +212,7 @@ Function New-RemoteRDPSignedCertificate()
                 [hashtable] $ArgList = $args[0]
             )
             $pkcs10 = New-Object -com "X509Enrollment.CX509CertificateRequestPkcs10.1";
-            $pkcs10.InitializeFromTemplateName(2, $ArgList.TemplateId)
+            $pkcs10.InitializeFromTemplateName(2, $ArgList.TemplateId);
 
             $objDN = New-Object -com 'X509Enrollment.CX500DistinguishedName.1';
             $objDN.Encode("CN=$env:COMPUTERNAME", 0);

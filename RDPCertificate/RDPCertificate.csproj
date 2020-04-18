@@ -47,11 +47,6 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>Assemblies\System.Management.Automation.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
@@ -60,7 +55,6 @@
     <None Include="SourceCode\AuthOptions.cs" />
     <Compile Include="SourceCode\NewSignedCertificate.cs" />
     <Compile Include="SourceCode\RDPOperations.cs" />
-    <None Include="SourceCode.Old\CimStuff.cs" />
     <Compile Include="SourceCode\NewCertificate.cs" />
     <Compile Include="SourceCode\DynamicParameter.cs" />
     <Compile Include="SourceCode\GetRDPCertificate.cs" />

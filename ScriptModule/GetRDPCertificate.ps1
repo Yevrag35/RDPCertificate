@@ -5,19 +5,28 @@ Function GetCertScriptBlock()
     {
         Function CheckStoreForCert([string]$name)
         {
-            $x509Store = New-Object -TypeName System.Security.Cryptography.X509Certificates.X509Store(
-                $name,
-                [System.Security.Cryptography.X509Certificates.StoreLocation]::LocalMachine
-            )
+            try
+            {
+                $x509Store = New-Object -TypeName System.Security.Cryptography.X509Certificates.X509Store(
+                    $name,
+                    [System.Security.Cryptography.X509Certificates.StoreLocation]::LocalMachine
+                )
 
-            $x509Store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly)
+                $x509Store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly)
 
-            $x509Store.Certificates.Find(
-                [System.Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint,
-                $cimRdpCert,
-                $false
-            )
-            $x509Store.Close()
+                $x509Store.Certificates.Find(
+                    [System.Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint,
+                    $cimRdpCert,
+                    $false
+                )
+            }
+            finally
+            {
+                if ($null -ne $x509store)
+                {
+                    $x509Store.Close()
+                }
+            }
         }
 
         $exceptions = New-Object -TypeName 'System.Collections.Generic.List[System.Exception]'
@@ -67,7 +76,6 @@ Function GetCertScriptBlock()
                     catch
                     {
                         $exceptions.Add($_.Exception)
-                        $x509Store.Close()
                         continue
                     }
 
@@ -75,12 +83,10 @@ Function GetCertScriptBlock()
                     {
                         $foundCert = $certCol
                         $foundStore = $storeName
-                        $x509Store.Close()
                         break
                     }
                     else
                     {
-                        $x509Store.Close()
                         continue
                     }
                 }
@@ -147,3 +153,5 @@ Function Get-RDPCertificate()
         $(GetCertScriptBlock).Invoke()
     }
 }
+
+Get-RDPCertificate

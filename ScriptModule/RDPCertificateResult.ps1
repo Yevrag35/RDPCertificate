@@ -2,20 +2,24 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Management.Automation;
 using System.Security.Cryptography.X509Certificates;
 
 public class RDPCertificateResult
 {
-    private X509Certificate2[] _certs;
-    private Exception[] _exs;
+    private X509Certificate2 _cert;
+    private string _computer;
+    private ReadOnlyCollection<Exception> _exs;
     private string _store;
     private string _thumb;
 
-    public X509Certificate2[] Certificates { get { return _certs; } }
-    public bool Exists { get { return _certs != null && _certs.Length > 0; } }
-    public Exception[] Exceptions { get { return _exs; } }
-    public bool IsFaulted { get { return _exs != null && _exs.Length > 0; } }
+    public X509Certificate2 Certificate { get { return _cert; } }
+    public string ComputerName { get { return _computer; } }
+    public bool Exists { get { return _cert != null; } }
+    public ReadOnlyCollection<Exception> Exceptions { get { return _exs; } }
+    public bool IsFaulted { get { return _exs != null && _exs.Count > 0; } }
     public string PublishedThumbprint { get { return _thumb; } }
     public string StoreName { get { return _store; } }
 
@@ -23,9 +27,21 @@ public class RDPCertificateResult
     {
         foreach (PSPropertyInfo prop in pso.Properties)
         {
-            if (prop.Name == "Certificates" && prop.Value != null)
+            if (prop.Name == "Certificate" && prop.Value != null)
             {
-                this.SetCertificates(prop.Value);
+                PSObject certPso = prop.Value as PSObject;
+                if (certPso != null)
+                {
+                    _cert = (X509Certificate2)certPso.ImmediateBaseObject;
+                }
+                else
+                {
+                    _cert = (X509Certificate2)prop.Value;
+                }
+            }
+            else if (prop.Name == "ComputerName")
+            {
+                _computer = prop.Value as string;
             }
             else if (prop.Name == "PublishedThumbprint")
             {
@@ -35,40 +51,19 @@ public class RDPCertificateResult
             {
                 _store = prop.Value as string;
             }
-            else if (prop.Name == "Exceptions")
+            else if (prop.Name == "Exceptions" && prop.Value != null)
             {
-                if (prop.Value is IList list)
+                List<Exception> list = new List<Exception>();
+                IEnumerable excps = prop.Value as IEnumerable;
+                if (excps != null)
                 {
-                    _exs = new Exception[list.Count];
-                    for (int i = 0; i < list.Count; i++)
-                    {
-                        _exs[i] = (Exception)list[i];
-                    }
+                    list.AddRange(excps.OfType<Exception>());
                 }
-                else
+                _exs = list.AsReadOnly();
+                if (list.Count > 0)
                 {
-                    _exs = new Exception[] { };
+                    list.Clear();
                 }
-            }
-        }
-    }
-
-    private void SetCertificates(object propVal)
-    {
-        if (propVal is IList list)
-        {
-            _certs = new X509Certificate2[list.Count];
-            for (int i1 = 0; i1 < list.Count; i1++)
-            {
-                _certs[i1] = (X509Certificate2)list[i1];
-            }
-        }
-        else if (propVal is object[] objArr)
-        {
-            _certs = new X509Certificate2[objArr.Length];
-            for (int i2 = 0; i2 < objArr.Length; i2++)
-            {
-                _certs[i2] = (X509Certificate2)objArr[i2];
             }
         }
     }

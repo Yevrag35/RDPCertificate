@@ -96,17 +96,16 @@ Function GetCertScriptBlock()
 
         [pscustomobject]@{
             PublishedThumbprint = $cimRdpCert
-            Exists              = $foundCert.Count -gt 0
             Certificates        = $foundCert
             StoreName           = $foundStore
             Exceptions          = $exceptions
-            IsFaulted           = $exceptions.Count -gt 0
         }
     }
 }
 Function Get-RDPCertificate()
 {
     [CmdletBinding(DefaultParameterSetName = "None")]
+    [OutputType([RDPCertificateResult])]
     param
     (
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "ByComputerName")]
@@ -122,8 +121,6 @@ Function Get-RDPCertificate()
     $selectProps = [System.Collections.Generic.List[object]]@(
         @{L = "Certificate"; E = { $_.Certificates | Select-Object -First 1 } },
         "Exceptions",
-        "Exists",
-        "IsFaulted",
         "PublishedThumbprint"
         "StoreName"
     )
@@ -146,12 +143,12 @@ Function Get-RDPCertificate()
 
         $selectProps.Insert(1, @{L = "ComputerName"; E = "PSComputerName" })
 
-        Invoke-Command @sesArgs -ScriptBlock (GetCertScriptBlock) | Select-Object $selectProps
+        $result = Invoke-Command @sesArgs -ScriptBlock (GetCertScriptBlock) | Select-Object -Property $selectProps
     }
     else
     {
-        $(GetCertScriptBlock).Invoke()
-    }
-}
+        $result = $(GetCertScriptBlock).Invoke() | Select-Object -Property $selectProps
 
-Get-RDPCertificate
+    }
+    New-Object -TypeName "RDPCertificateResult" -ArgumentList $result
+}

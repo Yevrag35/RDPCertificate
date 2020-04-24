@@ -141,14 +141,13 @@ Function Get-RDPCertificate()
             }
         }
 
-        $selectProps.Insert(1, @{L = "ComputerName"; E = "PSComputerName" })
+        $selectProps.Add(@{L = "ComputerName"; E = "PSComputerName" })
 
-        $result = Invoke-Command @sesArgs -ScriptBlock (GetCertScriptBlock) | Select-Object -Property $selectProps
+        [psobject[]]$results = @(Invoke-Command @sesArgs -ScriptBlock (GetCertScriptBlock) | Select-Object -Property $selectProps)
     }
     else
     {
-        $result = $(GetCertScriptBlock).Invoke() | Select-Object -Property $selectProps
-
+        $results = $(GetCertScriptBlock).Invoke() | Select-Object -Property $selectProps
     }
-    New-Object -TypeName "RDPCertificateResult" -ArgumentList $result
+    [RDPCertificateResult]::FromObjects($results)
 }

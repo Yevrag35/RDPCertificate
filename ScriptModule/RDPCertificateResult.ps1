@@ -23,7 +23,20 @@ public class RDPCertificateResult
     public string PublishedThumbprint { get { return _thumb; } }
     public string StoreName { get { return _store; } }
 
-    public RDPCertificateResult(PSObject pso)
+    public static IEnumerable<RDPCertificateResult> FromObjects(params PSObject[] objs)
+    {
+        if (objs == null)
+        {
+            yield break;
+        }
+
+        foreach (PSObject pso in objs)
+        {
+            yield return new RDPCertificateResult(pso);
+        }
+    }
+
+    private RDPCertificateResult(PSObject pso)
     {
         foreach (PSPropertyInfo prop in pso.Properties)
         {

@@ -40,42 +40,53 @@ public class RDPCertificateResult
     {
         foreach (PSPropertyInfo prop in pso.Properties)
         {
-            if (prop.Name == "Certificate" && prop.Value != null)
+            switch (prop.Name)
             {
-                PSObject certPso = prop.Value as PSObject;
-                if (certPso != null)
+                case "Certificate":
                 {
-                    _cert = (X509Certificate2)certPso.ImmediateBaseObject;
+                    if (prop.Value != null)
+                    {
+                        PSObject certPso = prop.Value as PSObject;
+                        if (certPso != null)
+                        {
+                            _cert = (X509Certificate2)certPso.ImmediateBaseObject;
+                        }
+                        else
+                        {
+                            _cert = (X509Certificate2)prop.Value;
+                        }
+                    }
+                    break;
                 }
-                else
+                case "ComputerName":
+                    _computer = prop.Value as string;
+                    break;
+
+                case "PublishedThumbprint":
+                    _thumb = prop.Value as string;
+                    break;
+
+                case "StoreName":
+                    _store = prop.Value as string;
+                    break;
+
+                case "Exceptions":
                 {
-                    _cert = (X509Certificate2)prop.Value;
-                }
-            }
-            else if (prop.Name == "ComputerName")
-            {
-                _computer = prop.Value as string;
-            }
-            else if (prop.Name == "PublishedThumbprint")
-            {
-                _thumb = prop.Value as string;
-            }
-            else if (prop.Name == "StoreName")
-            {
-                _store = prop.Value as string;
-            }
-            else if (prop.Name == "Exceptions" && prop.Value != null)
-            {
-                List<Exception> list = new List<Exception>();
-                IEnumerable excps = prop.Value as IEnumerable;
-                if (excps != null)
-                {
-                    list.AddRange(excps.OfType<Exception>());
-                }
-                _exs = list.AsReadOnly();
-                if (list.Count > 0)
-                {
-                    list.Clear();
+                    if (prop.Value != null)
+                    {
+                        List<Exception> list = new List<Exception>();
+                        IEnumerable excps = prop.Value as IEnumerable;
+                        if (excps != null)
+                        {
+                            list.AddRange(excps.OfType<Exception>());
+                        }
+                        _exs = list.AsReadOnly();
+                        if (list.Count > 0)
+                        {
+                            list.Clear();
+                        }
+                    }
+                    break;
                 }
             }
         }
